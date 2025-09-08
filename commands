@@ -1,0 +1,5 @@
+# Invoke once and see logs + JSON result
+$fn = terraform output -raw lambda_name
+aws lambda invoke --function-name $fn out.json --log-type Tail --query LogResult --output text |
+  % { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
+Get-Content .\out.json | ConvertFrom-Json | Format-List
