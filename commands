@@ -1,8 +1,47 @@
-Sep 08, 2025 21:01:36 (a few seconds ago)
- Failed
-Scheduled run
-6.4 s
-Error: Cannot find module '/opt/nodejs/node_modules/canary_script'Require stack:- /var/task/index.js- /var/runtime/index.mjs Stack: Error: Cannot find module '/opt/n
-
-
-Error: Cannot find module '/opt/nodejs/node_modules/canary_script'Require stack:- /var/task/index.js- /var/runtime/index.mjs Stack: Error: Cannot find module '/opt/nodejs/node_modules/canary_script'Require stack:- /var/task/index.js- /var/runtime/index.mjs at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15) at Module._load (node:internal/modules/cjs/loader:981:27) at Module.require (node:internal/modules/cjs/loader:1231:19) at require (node:internal/modules/helpers:177:18) at exports.handler (/var/task/index.js:90:30) at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Start Canary
+2025-09-08T21:05:38.597Z WARN: IMPORTANT: The included AWS SDK for JavaScript v2 dependency will be removed and updated to use AWS SDK for JavaScript v3 in a future runtime release. When that happens, you can update your canary code references or if you want to continue referencing and using the included AWS SDK for JavaScript v2 dependency, you can add it as a dependency to your source code zip file.
+2025-09-08T21:05:38.598Z INFO: Event: {"canaryName":"uptime-artifact-dev-0dce-canary","s3BaseFilePath":"testbuc0096524thbgfdcnp4444/canary-artifacts/","customerCanaryHandlerName":"index.handler","customerCanaryCodeLocation":"arn:aws:lambda:us-east-1:400095111218:layer:cwsyn-uptime-artifact-dev-0-ecaf65d6-3e35-4f96-b3d2-3af4ec2f6378:4","invocationTime":1757365533336,"runtimeVersion":"syn-nodejs-puppeteer-6.2","s3EncryptionMode":"SSE_S3","activeTracing":false,"canaryRunId":"2475d455-1f83-4316-8871-2140567a6fd1","artifactS3Location":{"s3Bucket":"testbuc0096524thbgfdcnp4444","s3Key":"canary-artifacts/canary/us-east-1/uptime-artifact-dev-0dce-canary/2025/09/08/21/05-33-336"},"canaryRunStartTime":1757365536751,"logContextMap":{"canaryRunId":"2475d455-1f83-4316-8871-2140567a6fd1"},"isSingleBrowserCanary":true}
+2025-09-08T21:05:38.598Z INFO: Context: {"callbackWaitsForEmptyEventLoop":true,"functionVersion":"4","functionName":"cwsyn-uptime-artifact-dev-0-ecaf65d6-3e35-4f96-b3d2-3af4ec2f6378","memoryLimitInMB":"1500","logGroupName":"/aws/lambda/cwsyn-uptime-artifact-dev-0-ecaf65d6-3e35-4f96-b3d2-3af4ec2f6378","logStreamName":"2025/09/08/[4]5a5dbb66191446c1baf5856f43b1d256","invokedFunctionArn":"arn:aws:lambda:us-east-1:400095111218:function:cwsyn-uptime-artifact-dev-0-ecaf65d6-3e35-4f96-b3d2-3af4ec2f6378:4","awsRequestId":"b4064bb4-cec3-4626-a428-58f57255f646"}
+2025-09-08T21:05:38.598Z INFO: Recording configuration:
+2025-09-08T21:05:38.598Z INFO: Canary Name: uptime-artifact-dev-0dce-canary
+2025-09-08T21:05:38.598Z INFO: Canary Arn: arn:aws:synthetics:us-east-1:400095111218:canary:uptime-artifact-dev-0dce-canary
+2025-09-08T21:05:38.601Z INFO: Canary lambda invoked at: Mon Sep 08 2025 21:05:36 GMT+0000 (Coordinated Universal Time)
+2025-09-08T21:05:38.601Z INFO: AWS Account Id: 400095111218
+2025-09-08T21:05:38.601Z INFO: Region: us-east-1
+2025-09-08T21:05:38.601Z INFO: Artifact S3 Location: s3://testbuc0096524thbgfdcnp4444/canary-artifacts/canary/us-east-1/uptime-artifact-dev-0dce-canary/2025/09/08/21/05-33-336
+2025-09-08T21:05:38.601Z INFO: Encryption mode for uploading artifacts in S3: SSE_S3
+2025-09-08T21:05:38.602Z INFO: Configuring tracing: canaryName: uptime-artifact-dev-0dce-canary canaryArn: arn:aws:synthetics:us-east-1:400095111218:canary:uptime-artifact-dev-0dce-canary canaryRunId: 2475d455-1f83-4316-8871-2140567a6fd1
+2025-09-08T21:05:38.602Z INFO: Setting ActiveTracing to: false
+2025-09-08T21:05:38.603Z INFO: memoryLimitInMB: 1500
+2025-09-08T21:05:38.603Z INFO: awsRequestId: b4064bb4-cec3-4626-a428-58f57255f646
+2025-09-08T21:05:38.603Z INFO: timeRemainingInMillis: 59971
+2025-09-08T21:05:38.604Z INFO: Start cleaning up artifacts: /tmp
+2025-09-08T21:05:38.620Z INFO: Getting list of files under /tmp
+2025-09-08T21:05:38.621Z INFO: Checking list of files under /tmp to see if they are actual files.
+2025-09-08T21:05:38.622Z INFO: List of actual files under /tmp ["/tmp/2025-09-08T21-05-38-595Z-log.txt"]
+2025-09-08T21:05:38.636Z INFO: diskUsage: Filesystem     1K-blocks  Used Available Use% Mounted on,/dev/vdd         1065348    12   1048952   1% /tmp,
+2025-09-08T21:05:38.636Z INFO: tmp FileSystem: 	tmpSizeMB: 1040  	tmpUsagePercent: 1
+2025-09-08T21:05:38.714Z INFO: S3 Bucket location determined: us-east-1
+2025-09-08T21:05:41.818Z INFO: Launching Puppeteer browser with options: {"args":["--allow-pre-commit-input","--disable-background-networking","--disable-background-timer-throttling","--disable-backgrounding-occluded-windows","--disable-breakpad","--disable-client-side-phishing-detection","--disable-component-extensions-with-background-pages","--disable-component-update","--disable-default-apps","--disable-dev-shm-usage","--disable-extensions","--disable-hang-monitor","--disable-ipc-flooding-protection","--disable-popup-blocking","--disable-prompt-on-repost","--disable-renderer-backgrounding","--disable-sync","--enable-automation","--enable-blink-features=IdleDetection","--export-tagged-pdf","--force-color-profile=srgb","--metrics-recording-only","--no-first-run","--password-store=basic","--use-mock-keychain","--disable-domain-reliability","--disable-print-preview","--disable-speech-api","--disk-cache-size=33554432","--mute-audio","--no-default-browser-check","--no-pings","--single-process","--disable-features=Translate,BackForwardCache,AcceptCHFrame,MediaRouter,OptimizationHints,AudioServiceOutOfProcess","--enable-features=NetworkServiceInProcess2,SharedArrayBuffer","--hide-scrollbars","--ignore-gpu-blocklist","--in-process-gpu","--window-size=1920,1080","--use-gl=angle","--use-angle=swiftshader-webgl","--disable-setuid-sandbox","--no-sandbox","--no-zygote","--headless"],"defaultViewport":{"deviceScaleFactor":1,"hasTouch":false,"height":1080,"isLandscape":true,"isMobile":false,"width":1920},"headless":true,"executablePath":"/tmp/chromium/chromium"}
+2025-09-08T21:05:41.955Z INFO: Browser version: HeadlessChrome/111.0.5563.146
+2025-09-08T21:05:41.956Z INFO: Creating a new page.
+2025-09-08T21:05:42.038Z INFO: Setting up page events.
+2025-09-08T21:05:42.039Z INFO: Adding CloudWatchSynthetics/arn:aws:synthetics:us-east-1:400095111218:canary:uptime-artifact-dev-0dce-canary to user agent header sent with each outbound request.
+2025-09-08T21:05:42.040Z INFO: Creating Puppeteer HAR object.
+2025-09-08T21:05:42.040Z INFO: Starting HAR file logging.
+2025-09-08T21:05:42.042Z INFO: Start executing customer steps
+2025-09-08T21:05:42.042Z INFO: Customer canary entry file name: "index"
+2025-09-08T21:05:42.042Z INFO: Customer canary entry function name: "handler"
+2025-09-08T21:05:42.042Z INFO: Calling customer canary: /opt/nodejs/node_modules/index.handler()
+2025-09-08T21:05:42.054Z ERROR: Canary error: 
+TypeError: require(...) is not a function Stack: TypeError: require(...) is not a function    at Object.<anonymous> (/opt/nodejs/node_modules/index.js:6:63)    at Module._compile (node:internal/modules/cjs/loader:1364:14)    at Module._extensions..js (node:internal/modules/cjs/loader:1422:10)    at Module.load (node:internal/modules/cjs/loader:1203:32)    at Module._load (node:internal/modules/cjs/loader:1019:12)    at Module.require (node:internal/modules/cjs/loader:1231:19)    at require (node:internal/modules/helpers:177:18)    at exports.handler (/var/task/index.js:90:30)    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-09-08T21:05:42.058Z INFO: Har generation stopped
+2025-09-08T21:05:42.082Z INFO: Removing profile directory /tmp/puppeteer_dev_chrome_profile-8J0T4U
+2025-09-08T21:05:42.084Z INFO: Browser closed
+2025-09-08T21:05:42.094Z INFO: diskUsage: Filesystem     1K-blocks   Used Available Use% Mounted on,/dev/vdd         1065348 193204    855760  19% /tmp,
+2025-09-08T21:05:42.094Z INFO: tmp FileSystem: 	tmpSizeMB: 1040  	tmpUsagePercent: 19
+2025-09-08T21:05:42.095Z INFO: Publishing result and duration CloudWatch metrics with timestamp: Mon Sep 08 2025 21:05:33 GMT+0000 (Coordinated Universal Time) for canaryName: uptime-artifact-dev-0dce-canary stepName: null result: FAILED startDateTimeInUTC: Mon Sep 08 2025 21:05:36 GMT+0000 (Coordinated Universal Time) endDateTimeInUTC: Mon Sep 08 2025 21:05:42 GMT+0000 (Coordinated Universal Time)
+2025-09-08T21:05:42.142Z INFO: Getting list of files under /tmp
+2025-09-08T21:05:42.142Z INFO: Checking list of files under /tmp to see if they are actual files.
+2025-09-08T21:05:42.143Z INFO: List of actual files under /tmp ["/tmp/2025-09-08T21-05-38-595Z-log.txt","/tmp/SyntheticsReport-FAILED.json"]
+2025-09-08T21:05:42.143Z INFO: Uploading files to S3["/tmp/2025-09-08T21-05-38-595Z-log.txt","/tmp/SyntheticsReport-FAILED.json"]
