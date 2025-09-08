@@ -1,1 +1,5 @@
-Error: Cannot find module '/opt/nodejs/node_modules/canary_script'Require stack:- /var/task/index.js- /var/runtime/index.mjs Stack: Error: Cannot find module '/opt/nodejs/node_modules/canary_script'Require stack:- /var/task/index.js- /var/runtime/index.mjs at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15) at Module._load (node:internal/modules/cjs/loader:981:27) at Module.require (node:internal/modules/cjs/loader:1231:19) at require (node:internal/modules/helpers:177:18) at exports.handler (/var/task/index.js:90:30) at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Sep 08, 2025 21:01:36 (a few seconds ago)
+ Failed
+Scheduled run
+6.4 s
+Error: Cannot find module '/opt/nodejs/node_modules/canary_script'Require stack:- /var/task/index.js- /var/runtime/index.mjs Stack: Error: Cannot find module '/opt/n
