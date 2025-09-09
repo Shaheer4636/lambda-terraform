@@ -1,26 +1,3 @@
-Got it. This “TypeError: require(...) is not a function” in a CloudWatch Synthetics canary almost always means one of these:
-
-You’re calling a required module like a function (e.g., require('Synthetics')()).
-
-A custom layer or bundled node_modules in your canary is shadowing the built-in Synthetics modules under /opt/nodejs.
-
-You mixed ESM and CommonJS (e.g., "type":"module" or transpiled code) with a CJS runtime.
-
-Here’s the fastest, low-risk way to fix it.
-
-Do this checklist
-
-Runtime: Create the canary with the latest “Node.js with Puppeteer” Synthetics runtime in the console. Don’t pick a generic Lambda runtime.
-
-No extra layers: Remove all custom Lambda layers from the canary. Let Synthetics provide /opt/nodejs/* itself.
-
-No bundled deps: Upload only a single .js file (no package.json, no node_modules, no bundler output).
-
-CommonJS only: Use require(...) and do not set "type": "module".
-
-Do not call modules: Never do require('Synthetics')() or require('SyntheticsLogger')().
-
-Minimal, known-good canary script (paste as index.js)
 'use strict';
 
 const synthetics = require('Synthetics');
@@ -29,7 +6,6 @@ const log = require('SyntheticsLogger');
 const canaryScript = async () => {
   const page = await synthetics.getPage();
 
-  // Optional config
   const cfg = synthetics.getConfiguration();
   cfg.setConfig({
     continueOnStepFailure: false,
@@ -47,16 +23,6 @@ exports.handler = async () => {
   return await synthetics.execute(canaryScript);
 };
 
-If you still see the same error
 
-In the same file, add this once to confirm what’s being required:
-
-// quick sanity check
-// log.info('Synthetics typeof:', typeof require('Synthetics'));
-
-
-It should print object in logs. If not, something is overriding /opt/nodejs (custom layer). Remove layers.
-
-Ensure your upload doesn’t include node_modules or any index.js inside a node_modules/ path—those can become /opt/nodejs/node_modules/index.js and cause exactly your stack trace.
-
-Don’t import other libs like chrome-aws-lambda, @sparticuz/chromium, or your own framework wrappers in a Synthetics canary. They’re unnecessary and often conflict with the runtime.
+if (Test-Path canary.zip) { Remove-Item canary.zip }
+Compress-Archive -Path .\index.js -DestinationPath .\canary.zip
