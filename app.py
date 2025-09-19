@@ -1,14 +1,9 @@
-$event = (@{
-  action = 'run'
-  note   = 'manual trigger'
-} | ConvertTo-Json -Compress)
+# 1) Write the JSON payload
+Set-Content -Path payload.json -Value '{"action":"run","note":"manual trigger"}' -NoNewline -Encoding utf8
 
-# Verify it's valid JSON text
-$event
-
+# 2) Invoke the Lambda
 aws lambda invoke `
   --function-name uptime-uptime-lambda `
   --region us-east-1 `
-  --cli-binary-format raw-in-base64-out `
-  --payload "$event" `
+  --payload fileb://payload.json `
   out.json
