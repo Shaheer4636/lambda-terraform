@@ -1,28 +1,37 @@
 # lambda_generate_uptime.py
-# Generates monthly uptime/latency CSVs from CloudWatch Synthetics and (optionally) exports a QuickSight PDF to S3.
+# Generates monthly uptime/latency CSVs from CloudWatch Synthetics and (optionally) exports QuickSight PDFs to S3.
 #
-# Expects these environment variables (Terraform sets them):
+# New in this version:
+# - Exports ONE PDF PER CLIENT with parameterized title/details so you can make the client name and header line larger in QuickSight.
+# - Use a QuickSight *Paginated Report* sheet for consistent paper size/pagination (set QS_SHEET_ID to a paginated report sheet).
+#
+# Required/optional env vars (Terraform sets these):
 # - REPORTS_BUCKET (required): S3 bucket for outputs
 # - REPORTS_PREFIX (optional): S3 key prefix (e.g., "reports/roamjobs/CDP")
 # - QS_ACCOUNT_ID (optional): QuickSight account ID (required for PDF)
 # - DASHBOARD_ID  (optional): QuickSight dashboard ID (required for PDF)
-# - QS_SHEET_ID   (optional): QuickSight sheet ID (required for PDF)
+# - QS_SHEET_ID   (optional): QuickSight sheet ID (required for PDF)  -> Prefer a Paginated Report sheet for uniform pages.
 # - FAIL_STREAK   (optional): consecutive failed minutes to count as downtime (default 3)
 # - CLIENTS_JSON  (required): JSON map { "<ClientName>": ["canary-name-1", ...], ... }
 # - SERVICE_NAME  (optional): e.g., "CDP" for file names
-# - COMPANY_NAME  (optional): used in footer text if you add it to QS
+# - COMPANY_NAME  (optional): used in details text
+#
+# New parameter name env vars (optional; match these in your QS sheet):
+# - QS_TITLE_PARAM   (default "TitleText"): bind this to a large text box for the big, bold title (client/service/month)
+# - QS_DETAILS_PARAM (default "DetailsText"): bind this to a sub-header text box (company, region, window, etc.)
 #
 # Notes:
 # - Uses the previous calendar month in UTC as the reporting window.
 # - Writes:
 #   {PREFIX}/{YYYY}/cdp-year-YYYY.csv
 #   {PREFIX}/current/cdp-year.csv
-#   {PREFIX}/{YYYY}/{MM}/General {SERVICE} Service Level Report YYYY-MM.csv
-#   {PREFIX}/{YYYY}/{MM}/General {SERVICE} Service Level Report YYYY-MM.pdf  (if QS is configured)
+#   {PREFIX}/{YYYY}/{MM}/General {SERVICE} Service Level Report {YYYY}-{MM}-{CLIENT}.csv
+#   {PREFIX}/{YYYY}/{MM}/General {SERVICE} Service Level Report {YYYY}-{MM}-{CLIENT}.pdf  (if QS configured)
 #
-# - QuickSight PDF export requires:
-#   * QS_ACCOUNT_ID, DASHBOARD_ID, QS_SHEET_ID provided
-#   * QuickSight service role granted S3 access to your reports bucket (in QS Admin → Security & permissions → S3).
+# QuickSight snapshot:
+# - The PDF’s page size/layout are controlled by your QuickSight sheet (use a Paginated Report for “proper pages”).
+# - We pass Title/Details via QuickSight Parameters so you can scale fonts & line length in QS, not in code.
+#   See: StartDashboardSnapshotJob / SnapshotConfiguration; page size is not controlled by API. (AWS docs)
 
 import os
 import json
@@ -48,6 +57,10 @@ AWS_REGION    = os.getenv("AWS_REGION", "us-east-1")  # Provided by Lambda; defa
 FAIL_STREAK   = int(os.getenv("FAIL_STREAK", "3"))
 SERVICE_NAME  = os.getenv("SERVICE_NAME", "CDP")
 COMPANY_NAME  = os.getenv("COMPANY_NAME", "LogicEase Solutions Inc.")
+
+# Parameter names used in QuickSight sheet
+QS_TITLE_PARAM   = os.getenv("QS_TITLE_PARAM", "TitleText")
+QS_DETAILS_PARAM = os.getenv("QS_DETAILS_PARAM", "DetailsText")
 
 try:
     CLIENTS: Dict[str, List[str]] = json.loads(os.getenv("CLIENTS_JSON", "{}"))
@@ -97,7 +110,7 @@ def compute_availability_and_latency(canary_names: List[str],
                                      end: datetime.datetime) -> Tuple[float, int, int, float]:
     """
     Returns: (availability_ratio, total_minutes, down_minutes, avg_duration_ms)
-    - A minute is considered failed if ANY canary is < 100% SuccessPercent.
+    - A minute is failed if ANY canary is < 100% SuccessPercent.
     - Down minutes only begin counting after FAIL_STREAK consecutive failed minutes.
     """
     minute_points: Dict[datetime.datetime, Dict[str, List[float]]] = {}
@@ -182,15 +195,15 @@ def write_rows_csv(bucket: str, key: str, rows) -> None:
             writer.writerow(r)
     s3.put_object(Bucket=bucket, Key=key, Body=out.getvalue().encode("utf-8"))
 
-def start_qs_snapshot(year: str, month_str: str, prefix: str) -> str:
-    """Kick off a QuickSight PDF snapshot for a specific sheet."""
-    job_id = f"uptime-{year}-{month_str}-{int(time.time())}"
+def start_qs_snapshot(year: str, month_str: str, prefix: str, *,
+                      title_text: str, details_text: str) -> str:
+    """Kick off a QuickSight PDF snapshot for a specific sheet, with Title/Details parameters."""
+    job_id = f"uptime-{year}-{month_str}-{int(time.time())}-{abs(hash(title_text))%10000}"
     qs.start_dashboard_snapshot_job(
         AwsAccountId=QS_ACCOUNT_ID,
         DashboardId=DASHBOARD_ID,
         SnapshotJobId=job_id,
         UserConfiguration={
-            # Minimal; expand if you add RLS or embedding
             "AnonymousUsers": [{}]
         },
         SnapshotConfiguration={
@@ -211,6 +224,13 @@ def start_qs_snapshot(year: str, month_str: str, prefix: str) -> str:
                         "BucketRegion": AWS_REGION
                     }
                 }]
+            },
+            # We feed large header lines to big text boxes in QS via parameters.
+            "Parameters": {
+                "StringParameters": [
+                    {"Name": QS_TITLE_PARAM,   "Values": [title_text]},
+                    {"Name": QS_DETAILS_PARAM, "Values": [details_text]},
+                ]
             }
         }
     )
@@ -271,33 +291,30 @@ def handler(event, ctx):
         })
 
     # Per-run artifacts
-    prefix = f"{S3_PREFIX}/{year}/{month_str}/"
+    month_prefix = f"{S3_PREFIX}/{year}/{month_str}/"
     s3.put_object(
         Bucket=S3_BUCKET,
-        Key=f"{prefix}uptime.jsonl",
+        Key=f"{month_prefix}uptime.jsonl",
         Body=("\n".join(json.dumps(r) for r in results)).encode("utf-8")
     )
-    log(f"[info] wrote JSONL to s3://{S3_BUCKET}/{prefix}uptime.jsonl")
+    log(f"[info] wrote JSONL to s3://{S3_BUCKET}/{month_prefix}uptime.jsonl")
 
-    # Year rollup CSV (header-only if no results yet)
+    # Year rollup CSV (one row per month; we still store the *first* client for backward-compat)
     key_year = f"{S3_PREFIX}/{year}/cdp-year-{year}.csv"
     rows = load_year_rows(S3_BUCKET, key_year, int(year))
 
     if results:
-        r = results[0]
+        r0 = results[0]
         rows[month_num] = {
             "year": str(year),
             "month_num": month_num,
             "month_name": month_name,
-            "client": r["client"],
+            "client": r0["client"],
             "service": SERVICE_NAME,
-            "availability_pct": r["availability_pct"],
-            "response_time_sec": r["response_time_sec"],
+            "availability_pct": r0["availability_pct"],
+            "response_time_sec": r0["response_time_sec"],
             "generated_at_utc": generated_at
         }
-        month_csv_key = f"{prefix}General {SERVICE_NAME} Service Level Report {year}-{month_str}.csv"
-        write_rows_csv(S3_BUCKET, month_csv_key, [rows[month_num]])
-        log(f"[info] wrote month CSV to s3://{S3_BUCKET}/{month_csv_key}")
 
     # Write/update the year CSV (even if header-only)
     write_rows_csv(S3_BUCKET, key_year, rows)
@@ -311,29 +328,54 @@ def handler(event, ctx):
     )
     log(f"[info] updated stable copy at s3://{S3_BUCKET}/{S3_PREFIX}/current/cdp-year.csv")
 
-    # QuickSight snapshot (best-effort). Skip cleanly if not fully configured or no data yet.
+    # Also emit a per-client CSV for this month (useful for e-mailing)
+    for r in results:
+        per_client_csv_key = f"{month_prefix}General {SERVICE_NAME} Service Level Report {year}-{month_str}-{r['client']}.csv"
+        write_rows_csv(S3_BUCKET, per_client_csv_key, [{
+            "year": str(year),
+            "month_num": r["month_num"],
+            "month_name": r["month_name"],
+            "client": r["client"],
+            "service": SERVICE_NAME,
+            "availability_pct": r["availability_pct"],
+            "response_time_sec": r["response_time_sec"],
+            "generated_at_utc": r["generated_at_utc"]
+        }])
+        log(f"[info] wrote month CSV (client) to s3://{S3_BUCKET}/{per_client_csv_key}")
+
+    # QuickSight snapshots (per client). Skip cleanly if not configured or no data yet.
     has_data = any(r.get("minutes_total", 0) > 0 for r in results)
     if has_data and QS_ACCOUNT_ID and DASHBOARD_ID and QS_SHEET_ID:
-        try:
-            log("[info] starting QuickSight snapshot job")
-            job_id = start_qs_snapshot(year, month_str, prefix)
-            status = wait_qs_snapshot(job_id)
-            log(f"[info] QuickSight snapshot job status: {status}")
-            if status == "COMPLETED":
-                src_key = find_pdf_key(prefix)
-                if src_key:
-                    dst_key = f"{prefix}General {SERVICE_NAME} Service Level Report {year}-{month_str}.pdf"
-                    s3.copy_object(
-                        Bucket=S3_BUCKET,
-                        CopySource={"Bucket": S3_BUCKET, "Key": src_key},
-                        Key=dst_key
-                    )
-                    log(f"[info] wrote PDF to s3://{S3_BUCKET}/{dst_key}")
-            return {"status": "ok", "results": results, "prefix": prefix, "qs_status": status}
-        except Exception as e:
-            log(f"[warn] QuickSight snapshot failed: {type(e).__name__}: {e}")
-            return {"status": "ok", "results": results, "prefix": prefix, "qs_skipped": f"snapshot_error: {type(e).__name__}"}
+        overall_status = {}
+        for r in results:
+            client = r["client"]
+            # Big, descriptive lines to bind in QS text boxes:
+            # In QuickSight: add two text visuals, bind to parameters QS_TITLE_PARAM and QS_DETAILS_PARAM, set large font sizes.
+            title_line   = f"{client} — {SERVICE_NAME} Monthly Service Level Report — {month_name} {year}"
+            details_line = f"{COMPANY_NAME} • Reporting Window: {start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')} UTC • Region: {AWS_REGION}"
+
+            try:
+                log(f"[info] starting QuickSight snapshot for client '{client}'")
+                job_id = start_qs_snapshot(year, month_str, month_prefix, title_text=title_line, details_text=details_line)
+                status = wait_qs_snapshot(job_id)
+                log(f"[info] QuickSight snapshot job status for '{client}': {status}")
+                if status == "COMPLETED":
+                    src_key = find_pdf_key(month_prefix)
+                    if src_key:
+                        dst_key = f"{month_prefix}General {SERVICE_NAME} Service Level Report {year}-{month_str}-{client}.pdf"
+                        s3.copy_object(
+                            Bucket=S3_BUCKET,
+                            CopySource={"Bucket": S3_BUCKET, "Key": src_key},
+                            Key=dst_key
+                        )
+                        log(f"[info] wrote PDF to s3://{S3_BUCKET}/{dst_key}")
+                overall_status[client] = status
+            except Exception as e:
+                log(f"[warn] QuickSight snapshot failed for '{client}': {type(e).__name__}: {e}")
+                overall_status[client] = f"snapshot_error: {type(e).__name__}"
+
+        return {"status": "ok", "results": results, "prefix": month_prefix, "qs_status": overall_status}
     else:
         reason = "no_results" if not has_data else "qs_not_configured"
         log(f"[info] skipping QuickSight snapshot ({reason})")
-        return {"status": "ok", "results": results, "prefix": prefix, "qs_skipped": reason}
+        return {"status": "ok", "results": results, "prefix": month_prefix, "qs_skipped": reason}
