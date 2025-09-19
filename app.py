@@ -1,6 +1,15 @@
-Quick heads-up: this isn’t just a Lambda job. It’s a full pipeline—EventBridge triggers, Synthetics canaries across 10+ apps per client, our report Lambda, S3 outputs, optional QuickSight PDFs, plus alarms and IAM. We’re pulling minute-level metrics, paginating and merging them, then computing FAIL_STREAK availability, incident windows, MTTR/MTBF, percentiles, and daily rollups. The system publishes multiple synchronized artifacts—JSONL, per-client CSVs, a yearly rollup, and multi-page A4 HTML, with an option to export PDF—so formatting and consistency matter.
+We’re not building a single Lambda; it’s a pipeline (EventBridge → Synthetics canaries → Report Lambda → S3 outputs → optional QuickSight PDF) provisioned via Terraform with IAM, SSM, and Secrets wired in.
 
-Our biggest dependency is stable endpoints and auth. Several URLs only arrived this week and a few still fail, so we can’t finalize SLA math or charts until those are fixed. The good news: about eighty percent is done—data ingestion, calculations, charts, incidents, daily tables, S3 structure, Terraform modules, and alarms are in place. What’s left is endpoint stabilization, a quick sign-off on FAIL_STREAK/SLA, wiring the PDF export, and UAT. Once those pieces land, this becomes a dependable, auditable monthly reporting platform, not just a scheduled function.
+Where we are right now: the Lambda does generate the monthly HTML report (plus CSV, JSONL, year rollup, month index) from the canary data we have, with proper charts, incidents, and daily rollups.
 
-That aligns with the next-month task plan (endpoint fixes, PDF wiring, FAIL_STREAK/SLA sign-off, and UAT).
-If you want milestones to say out loud: Code freeze 28 Oct → UAT sign-off 30 Oct → GA 31 Oct.
+We fixed data paging, added guards for sparse data, standardized A4 pages, and set up alarms and least-privilege IAM. These parts are stable.
+
+What’s still hard: several app endpoints arrived late and some still fail/auth; without reliable endpoints we can’t fully validate SLA math, incident windows, or percentiles across all clients.
+
+Each client needs its own secrets, schedules, and FAIL_STREAK/SLA sign-off; those policy decisions change the math and must be agreed.
+
+To reach “system ready” we must: stabilize all endpoints, finalize canary flows, tune schedules/thresholds, wire HTML→PDF (or QS snapshot) for deliverables, and run UAT with sign-off.
+
+This is 10+ apps per client, minute-level data, and multi-artifact output; the complexity is integration and reliability, not just code.
+
+We can keep sending the HTML report while the remaining pieces land; full production readiness needs the above dependencies cleared
